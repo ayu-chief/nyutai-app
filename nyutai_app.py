@@ -32,7 +32,7 @@ if not st.session_state.get(auth_key):
 st.markdown(
     '<span style="color:gray;font-size:90%;">'
     '画面左のサイドバーから「月ごとの入退室一覧」が表示できます。<br>'
-    '※サイドバーが見えない場合は左上の ≡ ボタンを押してください。'
+    '※サイドバーが見えない場合は左上の >> ボタンを押してください。'
     '</span>',
     unsafe_allow_html=True
 )
