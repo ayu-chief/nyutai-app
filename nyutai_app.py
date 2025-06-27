@@ -243,7 +243,6 @@ if page == "本日の出席一覧":
             mask = (df["生徒名"] == selected_name) & (df["年"] == year) & (df["月"] == month)
             records = df[mask]
             if len(records) > 0:
-                # 1件目だけ使う（1生徒1ヶ月1件とする場合）
                 initial_text = records.iloc[0]["内容"]
                 already_saved = True
                 record_index = records.index[0]  # データフレーム内のインデックス
@@ -287,18 +286,6 @@ if page == "本日の出席一覧":
                             df = pd.DataFrame([new_row])
                         df.to_csv(save_file, index=False, encoding="utf-8-sig")
                         st.success("報告内容を保存しました！")
-
-        # --- 入力済み内容の表示 ---
-        if os.path.exists(save_file):
-            df = pd.read_csv(save_file)
-            mask = (df["生徒名"] == selected_name) & (df["年"] == year) & (df["月"] == month)
-            records = df[mask]
-            if len(records) > 0:
-                st.markdown("### この生徒の報告履歴（今月）")
-                st.table(records[["記入日時", "内容"]])
-            else:
-                st.info("この生徒の今月の記録はまだありません。")
-
     else:
         st.info("出席一覧から生徒名を選択してください。")
 
