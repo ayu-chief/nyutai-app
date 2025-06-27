@@ -222,6 +222,31 @@ if page == "本日の出席一覧":
         styled = cal_df.style.applymap(color_cell)
 
         # ▼ ここでカレンダー表示
+        # ▼ 印刷用A4報告書ボタン＆印刷ページ
+    print_mode = st.button("この生徒のA4報告書を表示（印刷用）")
+
+    if print_mode:
+        st.markdown("<style> @media print { .element-container { box-shadow: none !important; } }</style>", unsafe_allow_html=True)
+        st.markdown(f"## {selected_name}さん　今月の入退室状況（{year}年{month}月）")
+        st.write(cal_df)
+        st.markdown("---")
+        st.markdown("## 日常の様子・行動報告・特記事項")
+        import os
+        import pandas as pd
+        if os.path.exists("reports.csv"):
+            df = pd.read_csv("reports.csv")
+            mask = (df["生徒名"] == selected_name) & (df["年"] == year) & (df["月"] == month)
+            records = df[mask]
+            if len(records) > 0:
+                st.write(records.iloc[0]["内容"])
+            else:
+                st.write("(まだ報告がありません)")
+        else:
+            st.write("(まだ報告がありません)")
+        st.markdown("---")
+        st.caption("右上またはCtrl+PでA4印刷できます")
+        st.stop()
+
         st.dataframe(
             styled,
             use_container_width=True,
