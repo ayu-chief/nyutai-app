@@ -221,12 +221,58 @@ if page == "本日の出席一覧":
 
         styled = cal_df.style.applymap(color_cell)
 
-                # ▼ ここでカレンダー表示
-        st.dataframe(
-            styled,
-            use_container_width=True,
-            hide_index=True
-        )
+# ▼ ここでカレンダー表示
+st.dataframe(
+    styled,
+    use_container_width=True,
+    hide_index=True
+)
+
+if selected_rows is not None and len(selected_rows) > 0:
+    selected_name = selected_rows[0]["生徒名"]  # AgGridならこの形が多い
+    # ここで year, month は既に取得してある前提
+
+    # ▼ 日報入力フォーム
+    with st.form("report_form"):
+        report = st.text_area("日常の様子・行動報告・特記事項 など", height=120)
+        submitted = st.form_submit_button("この内容を保存")
+        if submitted:
+            if not report.strip():
+                st.warning("内容を入力してください。")
+            else:
+                # 個人ごと・年月ごとに保存
+                new_row = {
+                    "生徒名": selected_name,
+                    "年": year,
+                    "月": month,
+                    "内容": report,
+                    "記入日時": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                import os
+                import pandas as pd
+                save_file = "reports.csv"
+                if os.path.exists(save_file):
+                    df = pd.read_csv(save_file)
+                    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                else:
+                    df = pd.DataFrame([new_row])
+                df.to_csv(save_file, index=False, encoding="utf-8-sig")
+                st.success("報告内容を保存しました！")
+
+    # ▼ 入力済み内容の表示（個人＆年月ごとに絞る）
+    import os
+    if os.path.exists("reports.csv"):
+        df = pd.read_csv("reports.csv")
+        mask = (df["生徒名"] == selected_name) & (df["年"] == year) & (df["月"] == month)
+        records = df[mask]
+        if len(records) > 0:
+            st.markdown("### この生徒の報告履歴（今月）")
+            st.table(records[["記入日時", "内容"]])
+        else:
+            st.info("この生徒の今月の記録はまだありません。")
+else:
+    st.info("出席一覧から生徒名を選択してください。")
+
 
         # ここから日報入力フォームを追加！
 with st.form("report_form"):
