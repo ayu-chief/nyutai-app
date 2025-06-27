@@ -221,11 +221,42 @@ if page == "本日の出席一覧":
 
         styled = cal_df.style.applymap(color_cell)
 
+                # ▼ ここでカレンダー表示
         st.dataframe(
             styled,
             use_container_width=True,
             hide_index=True
         )
+
+        # ここから日報入力フォームを追加！
+        st.markdown("## 日常の様子・特記事項 記入フォーム")
+
+        with st.form("report_form"):
+            report = st.text_area("日常の様子・行動報告・特記事項 など", height=120)
+            submitted = st.form_submit_button("この内容を保存")
+            if submitted:
+                if not report.strip():
+                    st.warning("内容を入力してください。")
+                else:
+                    # ここで保存処理（例：CSVファイル保存。Googleシートも可）
+                    new_row = {
+                        "生徒名": selected_name,
+                        "年": year,
+                        "月": month,
+                        "内容": report,
+                        "記入日時": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    import os
+                    import pandas as pd
+                    save_file = "reports.csv"
+                    if os.path.exists(save_file):
+                        df = pd.read_csv(save_file)
+                        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                    else:
+                        df = pd.DataFrame([new_row])
+                    df.to_csv(save_file, index=False, encoding="utf-8-sig")
+                    st.success("報告内容を保存しました！")
+
     else:
         st.info("出席一覧から生徒名を選択してください。")
 
