@@ -228,17 +228,23 @@ if page == "本日の出席一覧":
             hide_index=True
         )
 
-        # ▼ 日報入力フォーム
         import os
         import pandas as pd
-        with st.form("report_form"):
-            report = st.text_area("日常の様子・行動報告・特記事項 など", height=120)
+
+        # --- 日報入力フォーム ---
+        # フォームのkeyに生徒名・年月を付与
+        form_key = f"report_form_{selected_name}_{year}_{month}"
+        with st.form(form_key):
+            report = st.text_area(
+                "日常の様子・行動報告・特記事項 など",
+                height=120,
+                key=f"report_textarea_{selected_name}_{year}_{month}"  # ←ここ重要
+            )
             submitted = st.form_submit_button("この内容を保存")
             if submitted:
                 if not report.strip():
                     st.warning("内容を入力してください。")
                 else:
-                    # 個人ごと・年月ごとに保存
                     new_row = {
                         "生徒名": selected_name,
                         "年": year,
@@ -255,7 +261,7 @@ if page == "本日の出席一覧":
                     df.to_csv(save_file, index=False, encoding="utf-8-sig")
                     st.success("報告内容を保存しました！")
 
-        # ▼ 入力済み内容の表示（個人＆年月ごとに絞る）
+        # --- 入力済み内容の表示 ---
         save_file = "reports.csv"
         if os.path.exists(save_file):
             df = pd.read_csv(save_file)
@@ -266,6 +272,7 @@ if page == "本日の出席一覧":
                 st.table(records[["記入日時", "内容"]])
             else:
                 st.info("この生徒の今月の記録はまだありません。")
+
     else:
         st.info("出席一覧から生徒名を選択してください。")
 
