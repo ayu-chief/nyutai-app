@@ -267,9 +267,6 @@ if os.path.exists("reports.csv"):
     else:
         st.info("この生徒の今月の記録はまだありません。")
 
-    else:
-        st.info("出席一覧から生徒名を選択してください。")
-
 # ===== 2. 入退室一覧（月選択対応） =====
 elif page == "入退室一覧":
     st.title("入退室一覧")
