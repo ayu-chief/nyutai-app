@@ -416,53 +416,56 @@ elif page == "月別報告書一覧":
     df["年"] = pd.to_numeric(df["年"], errors="coerce").astype("Int64")
     df["月"] = pd.to_numeric(df["月"], errors="coerce").astype("Int64")
 
-    # 年月選択
-    unique_years = sorted(df["年"].dropna().unique())
-    unique_months = sorted(df["月"].dropna().unique())
-    col1, col2 = st.columns(2)
-    with col1:
-        sel_year = st.selectbox("年", unique_years, index=len(unique_years)-1)
-    with col2:
-        sel_month = st.selectbox("月", unique_months, index=len(unique_months)-1)
+    # ▼ サイドバーで年・月を選択
+    years = sorted(df["年"].dropna().unique())
+    months = sorted(df["月"].dropna().unique())
+    sel_year = st.sidebar.selectbox("年", years, index=len(years)-1)
+    sel_month = st.sidebar.selectbox("月", months, index=len(months)-1)
 
-    # 月内の報告データ
+    # 生徒情報をAPIなどから取得（学年も含める）
+    students = get_students()  # 例: [{"id":1,"name":"田中太郎","grade_id":12}, ...]
+    students = sorted(students, key=lambda x: x.get("grade_id") or 999)
+    grade_map = GRADE_NAMES
+
+    # 今月分データ
     filtered = df[(df["年"] == sel_year) & (df["月"] == sel_month)]
 
-    # 生徒リストをAPIやデータ等から取得（例: get_students()）
-    students = get_students()  # ここは既存の生徒取得関数にあわせて
-    student_names = sorted([stu["name"] for stu in students])
-
-    # データフレームへ整形
-    show_rows = []
-    for name in student_names:
-        row = filtered[filtered["生徒名"] == name]
-        if len(row) > 0:
-            # 入力済み
-            show_rows.append({
+    # 生徒ごとに内容をまとめる
+    table = []
+    for stu in students:
+        name = stu["name"]
+        grade_id = stu.get("grade_id")
+        grade_name = grade_map.get(grade_id, "不明")
+        row_data = filtered[filtered["生徒名"] == name]
+        if len(row_data) > 0:
+            row = {
+                "学年": grade_name,
                 "生徒名": name,
-                "内容": row.iloc[0]["内容"],
-                "記入日時": row.iloc[0]["記入日時"]
-            })
+                "内容": row_data.iloc[0]["内容"],
+                "記入日時": row_data.iloc[0]["記入日時"]
+            }
         else:
-            # 未入力
-            show_rows.append({
+            row = {
+                "学年": grade_name,
                 "生徒名": name,
                 "内容": "未入力",
                 "記入日時": "-"
-            })
-    show = pd.DataFrame(show_rows)
+            }
+        table.append(row)
 
-    # ▼ 赤字の未入力を太字で
-    def highlight_unentered(val):
+    df_show = pd.DataFrame(table)
+
+    # ▼ 「未入力」を赤字・太字で
+    def color_unentered(val):
         if val == "未入力":
             return "color: red; font-weight: bold;"
         return ""
-    styled = show.style.applymap(highlight_unentered, subset=["内容"])
+    styled = df_show.style.applymap(color_unentered, subset=["内容"])
 
     st.dataframe(styled, use_container_width=True, hide_index=True)
 
-    # CSVダウンロード
-    csv = show.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+    # ▼ CSVダウンロード
+    csv = df_show.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
     st.download_button(
         label=f"{sel_year}年{sel_month}月_全員分_報告書一覧.csv をダウンロード",
         data=csv,
