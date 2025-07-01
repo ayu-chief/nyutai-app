@@ -407,20 +407,16 @@ elif page == "月別報告書一覧":
     import os
     import pandas as pd
 
-    # ファイル存在チェック
     save_file = "reports.csv"
     if not os.path.exists(save_file):
         st.warning("まだ報告が保存されていません。")
         st.stop()
 
-    # データ読込
     df = pd.read_csv(save_file)
-
-    # 年月の型を数値化しておく
     df["年"] = pd.to_numeric(df["年"], errors="coerce").astype("Int64")
     df["月"] = pd.to_numeric(df["月"], errors="coerce").astype("Int64")
 
-    # 年月の選択肢
+    # 年月選択
     unique_years = sorted(df["年"].dropna().unique())
     unique_months = sorted(df["月"].dropna().unique())
     col1, col2 = st.columns(2)
@@ -429,21 +425,47 @@ elif page == "月別報告書一覧":
     with col2:
         sel_month = st.selectbox("月", unique_months, index=len(unique_months)-1)
 
-    # 絞り込み
+    # 月内の報告データ
     filtered = df[(df["年"] == sel_year) & (df["月"] == sel_month)]
 
-    if len(filtered) == 0:
-        st.info(f"{sel_year}年{sel_month}月の報告記録がありません。")
-    else:
-        # 生徒ごと一覧テーブル
-        show = filtered[["生徒名", "内容", "記入日時"]].sort_values("生徒名")
-        st.dataframe(show, use_container_width=True, hide_index=True)
+    # 生徒リストをAPIやデータ等から取得（例: get_students()）
+    students = get_students()  # ここは既存の生徒取得関数にあわせて
+    student_names = sorted([stu["name"] for stu in students])
 
-        # CSVダウンロード
-        csv = show.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
-        st.download_button(
-            label=f"{sel_year}年{sel_month}月_全員分_報告書一覧.csv をダウンロード",
-            data=csv,
-            file_name=f"{sel_year}年{sel_month}月_全員分_報告書一覧.csv",
-            mime='text/csv'
-        )
+    # データフレームへ整形
+    show_rows = []
+    for name in student_names:
+        row = filtered[filtered["生徒名"] == name]
+        if len(row) > 0:
+            # 入力済み
+            show_rows.append({
+                "生徒名": name,
+                "内容": row.iloc[0]["内容"],
+                "記入日時": row.iloc[0]["記入日時"]
+            })
+        else:
+            # 未入力
+            show_rows.append({
+                "生徒名": name,
+                "内容": "未入力",
+                "記入日時": "-"
+            })
+    show = pd.DataFrame(show_rows)
+
+    # ▼ 赤字の未入力を太字で
+    def highlight_unentered(val):
+        if val == "未入力":
+            return "color: red; font-weight: bold;"
+        return ""
+    styled = show.style.applymap(highlight_unentered, subset=["内容"])
+
+    st.dataframe(styled, use_container_width=True, hide_index=True)
+
+    # CSVダウンロード
+    csv = show.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+    st.download_button(
+        label=f"{sel_year}年{sel_month}月_全員分_報告書一覧.csv をダウンロード",
+        data=csv,
+        file_name=f"{sel_year}年{sel_month}月_全員分_報告書一覧.csv",
+        mime='text/csv'
+    )
