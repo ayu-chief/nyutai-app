@@ -336,6 +336,17 @@ if page == "本日の出席一覧":
                             df = pd.DataFrame([new_row])
                         df.to_csv(save_file, index=False, encoding="utf-8-sig")
                         st.success("報告内容を保存しました！")
+                        
+                        # ↓↓↓ ここでスプレッドシートにも追記 ↓↓↓
+                        worksheet.append_row([
+                            str(month),  # 例：'7'（今月）
+                            selected_name,
+                            '',  # カレンダー（ここは後で調整・もしくは空白）
+                            '',  # 入退室記録（ここも後で）
+                            '',  # 出席日数（同上）
+                            report  # 学習・生活・行動の報告
+                        ])
+                        st.success("報告内容を保存しました！")
     else:
         st.info("出席一覧から生徒名を選択してください。")
 
