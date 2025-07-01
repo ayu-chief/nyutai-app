@@ -402,8 +402,9 @@ elif page == "入退室一覧":
         if col not in ("学年", "生徒名"):
             gb.configure_column(
                 col,
-                width=70,
+                width=100,
                 cellRenderer='''(params) => `<div style="white-space:pre-line;line-height:1.4em">${params.value || ""}</div>`'''
+                autoHeight=True  # ←これも追加すると、2行目があっても行の高さが自動調整される
             )
     gb.configure_selection(selection_mode="single", use_checkbox=True)
     grid_options = gb.build()
