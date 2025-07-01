@@ -87,7 +87,10 @@ with st.sidebar:
     st.markdown("### 📅 メニュー")
 
 # ===== ページ切替 =====
-page = st.sidebar.selectbox("ページを選択", ["本日の出席一覧", "入退室一覧"])
+page = st.sidebar.selectbox(
+    "ページを選択",
+    ["本日の出席一覧", "入退室一覧", "月別報告書一覧"]
+)
 
 # ===== 1. 本日の出席一覧 =====
 if page == "本日の出席一覧":
@@ -398,3 +401,45 @@ elif page == "入退室一覧":
         use_container_width=True,
         hide_index=True
     )
+
+elif page == "月別報告書一覧":
+    st.title("月別・生徒別 報告書一覧")
+    import os
+    import pandas as pd
+
+    # ファイル存在チェック
+    save_file = "reports.csv"
+    if not os.path.exists(save_file):
+        st.warning("まだ報告が保存されていません。")
+        st.stop()
+
+    # データ読込
+    df = pd.read_csv(save_file)
+
+    # 月選択
+    unique_years = sorted(df["年"].unique())
+    unique_months = sorted(df["月"].unique())
+    col1, col2 = st.columns(2)
+    with col1:
+        sel_year = st.selectbox("年", unique_years, index=len(unique_years)-1)
+    with col2:
+        sel_month = st.selectbox("月", unique_months, index=len(unique_months)-1)
+
+    # 絞り込み
+    filtered = df[(df["年"] == sel_year) & (df["月"] == sel_month)]
+
+    if len(filtered) == 0:
+        st.info(f"{sel_year}年{sel_month}月の報告記録がありません。")
+    else:
+        # 生徒ごと一覧テーブル
+        show = filtered[["生徒名", "内容", "記入日時"]].sort_values("生徒名")
+        st.dataframe(show, use_container_width=True, hide_index=True)
+
+        # CSVダウンロード
+        csv = show.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+        st.download_button(
+            label=f"{sel_year}年{sel_month}月_全員分_報告書一覧.csv をダウンロード",
+            data=csv,
+            file_name=f"{sel_year}年{sel_month}月_全員分_報告書一覧.csv",
+            mime='text/csv'
+        )
