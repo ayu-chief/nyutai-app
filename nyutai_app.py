@@ -374,15 +374,19 @@ elif page == "入退室一覧":
         for d in range(1, days_in_month + 1):
             v = att_dict.get((stu["id"], d))
             if v:
-                # 2行表示
-                row[days[d-1]] = f"{to_hm(v[0])}\n{to_hm(v[1])}"
+                # 2行表示（AgGrid用に<br>に置換）
+                row[days[d-1]] = f"{to_hm(v[0])}<br>{to_hm(v[1])}"
             else:
                 row[days[d-1]] = "-"
         table.append(row)
     df_all = pd.DataFrame(table)
 
-    # CSVダウンロード
-    csv = df_all.to_csv(index=False).encode('utf-8-sig')
+    # CSVダウンロード（改行は \n に戻してエクスポート）
+    df_csv = df_all.copy()
+    for col in df_csv.columns:
+        if col not in ("学年", "生徒名"):
+            df_csv[col] = df_csv[col].astype(str).str.replace("<br>", "\n")
+    csv = df_csv.to_csv(index=False).encode('utf-8-sig')
     st.download_button(
         label="この一覧をCSVでダウンロード",
         data=csv,
@@ -390,22 +394,26 @@ elif page == "入退室一覧":
         mime='text/csv'
     )
 
-    # ヘッダーの色分け
-    def header_color(s):
-        color_row = []
-        for i, col in enumerate(s.index):
-            if i < 2:
-                color_row.append("background-color: #e8e8e8")
-            else:
-                color_row.append(f"background-color: {colors[i-2]}")
-        return color_row
+    # --- AgGridでセル2行表示 ---
+    from st_aggrid import AgGrid, GridOptionsBuilder
 
-    styled = df_all.style.apply(header_color, axis=1)
+    gb = GridOptionsBuilder.from_dataframe(df_all)
+    for col in df_all.columns:
+        if col not in ("学年", "生徒名"):
+            gb.configure_column(
+                col,
+                width=70,
+                cellRenderer='''(params) => `<div style="white-space:pre-line;line-height:1.4em">${params.value || ""}</div>`'''
+            )
+    gb.configure_selection(selection_mode="single", use_checkbox=True)
+    grid_options = gb.build()
 
-    st.dataframe(
-        styled,
-        use_container_width=True,
-        hide_index=True
+    AgGrid(
+        df_all,
+        gridOptions=grid_options,
+        fit_columns_on_grid_load=True,
+        height=500,
+        allow_unsafe_jscode=True,
     )
 
 elif page == "月別報告書一覧":
