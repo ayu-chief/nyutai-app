@@ -8,6 +8,23 @@ import requests
 import jpholiday
 import re
 
+import gspread
+from google.oauth2.service_account import Credentials
+
+SERVICE_ACCOUNT_FILE = "service_account.json"  # ← ダウンロードしたJSON名
+SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+]
+
+creds = Credentials.from_service_account_file(
+    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+gc = gspread.authorize(creds)
+
+SPREADSHEET_KEY = "14xpU7k_Kh_s-ciOWeeaHcoi8NYDfYMpn1Lri3lSKOLc"
+sh = gc.open_by_key(SPREADSHEET_KEY)
+worksheet = sh.sheet1  # 一番左のシート
+
 # ====== パスワード認証（当日中有効） ======
 PASSWORD = "kawasaki"   # ここを書き換えて運用してください
 
