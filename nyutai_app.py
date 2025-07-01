@@ -398,11 +398,13 @@ elif page == "入退室一覧":
     from st_aggrid import AgGrid, GridOptionsBuilder
 
     gb = GridOptionsBuilder.from_dataframe(df_all)
+    gb.configure_column("学年", width=80)
+    gb.configure_column("生徒名", width=120)
     for col in df_all.columns:
         if col not in ("学年", "生徒名"):
             gb.configure_column(
                 col,
-                width=120,
+                width=80,
                 cellRenderer='''(params) => `<div style="white-space:pre-line;line-height:1.4em">${params.value || ""}</div>`''',
                 autoHeight=True  # ←これも追加すると、2行目があっても行の高さが自動調整される
             )
@@ -412,9 +414,9 @@ elif page == "入退室一覧":
     AgGrid(
         df_all,
         gridOptions=grid_options,
-        fit_columns_on_grid_load=True,
+        allow_unsafe_jscode=True,  # ←これを絶対Trueにする
+        fit_columns_on_grid_load=False,  # ←ここもFalseにするのがコツ！
         height=500,
-        allow_unsafe_jscode=True,
     )
 
 elif page == "月別報告書一覧":
