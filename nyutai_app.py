@@ -367,37 +367,34 @@ elif page == "入退室一覧":
 
     from st_aggrid import AgGrid, GridOptionsBuilder
 
-    # 入退室列を作成（2行に分ける）
-table = []
-for stu in students:
-    att = att_dict.get(stu["id"], {})
-    grade_id = stu.get("grade_id")
-    grade_name = GRADE_NAMES.get(grade_id, "不明")
-    entrance = to_hm(att.get('entrance_time', '-'))
-    exit = to_hm(att.get('exit_time', '-'))
-    row = {
-        "学年": grade_name,
-        "生徒名": stu["name"],
-        "入退室": f"{entrance}\n{exit}",  # ←ここが2行表示
-        "ステータス": "出席" if att.get("entrance_time") else "未出席",
-    }
-    table.append(row)
-df = pd.DataFrame(table)
+    # ▼ 生徒ごとの入退室を2行表示でテーブル化
+    table = []
+    for stu in students:
+        att = att_dict.get(stu["id"], {})
+        grade_id = stu.get("grade_id")
+        grade_name = GRADE_NAMES.get(grade_id, "不明")
+        entrance = to_hm(att.get('entrance_time', '-'))
+        exit = to_hm(att.get('exit_time', '-'))
+        row = {
+            "学年": grade_name,
+            "生徒名": stu["name"],
+            "入退室": f"{entrance}\n{exit}",  # ←ここが2行表示
+            "ステータス": "出席" if att.get("entrance_time") else "未出席",
+        }
+        table.append(row)
+    df = pd.DataFrame(table)
 
-from st_aggrid import AgGrid, GridOptionsBuilder
+    gb = GridOptionsBuilder.from_dataframe(df)
+    gb.configure_column("入退室", width=90, cellStyle={"whiteSpace": "pre-line"})
+    gb.configure_selection(selection_mode="single", use_checkbox=True)
+    grid_options = gb.build()
 
-gb = GridOptionsBuilder.from_dataframe(df)
-gb.configure_column("入退室", width=90, cellStyle={"whiteSpace": "pre-line"})
-gb.configure_selection(selection_mode="single", use_checkbox=True)
-grid_options = gb.build()
-
-AgGrid(
-    df,
-    gridOptions=grid_options,
-    fit_columns_on_grid_load=True,
-    height=400,
-)
-
+    AgGrid(
+        df,
+        gridOptions=grid_options,
+        fit_columns_on_grid_load=True,
+        height=400,
+    )
 
 elif page == "月別報告書一覧":
     st.title("月別・生徒別 報告書一覧")
