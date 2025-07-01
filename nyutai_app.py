@@ -375,7 +375,7 @@ elif page == "入退室一覧":
             v = att_dict.get((stu["id"], d))
             if v:
                 # 2行表示（AgGrid用に<br>に置換）
-                row[days[d-1]] = f"{to_hm(v[0])}<br>{to_hm(v[1])}"
+                row[days[d-1]] = f"{to_hm(v[0])}\n{to_hm(v[1])}"
             else:
                 row[days[d-1]] = "-"
         table.append(row)
@@ -408,7 +408,6 @@ elif page == "入退室一覧":
                 cellRenderer='''(params) => `<div style="white-space:pre-line;line-height:1.4em">${params.value || ""}</div>`''',
                 autoHeight=True  # ←これも追加すると、2行目があっても行の高さが自動調整される
             )
-    gb.configure_selection(selection_mode="single", use_checkbox=True)
     grid_options = gb.build()
 
     AgGrid(
