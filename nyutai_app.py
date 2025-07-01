@@ -365,42 +365,39 @@ elif page == "入退室一覧":
             d = datetime.fromisoformat(dt_in).day
             att_dict[(uid, d)] = (dt_in, dt_out)
 
-    table = []
-    for stu in students:
-        row = {"学年": GRADE_NAMES.get(stu.get("grade_id"), "不明"), "生徒名": stu["name"]}
-        for d in range(1, days_in_month+1):
-            v = att_dict.get((stu["id"], d))
-            if v:
-                row[days[d-1]] = f"{to_hm(v[0])}-{to_hm(v[1])}"
-            else:
-                row[days[d-1]] = "-"
-        table.append(row)
-    df_all = pd.DataFrame(table)
+    from st_aggrid import AgGrid, GridOptionsBuilder
 
-    csv = df_all.to_csv(index=False).encode('utf-8-sig')
-    st.download_button(
-        label="この一覧をCSVでダウンロード",
-        data=csv,
-        file_name=f"{year}年{month}月_入退室一覧.csv",
-        mime='text/csv'
-    )
+    # 入退室列を作成（2行に分ける）
+table = []
+for stu in students:
+    att = att_dict.get(stu["id"], {})
+    grade_id = stu.get("grade_id")
+    grade_name = GRADE_NAMES.get(grade_id, "不明")
+    entrance = to_hm(att.get('entrance_time', '-'))
+    exit = to_hm(att.get('exit_time', '-'))
+    row = {
+        "学年": grade_name,
+        "生徒名": stu["name"],
+        "入退室": f"{entrance}\n{exit}",  # ←ここが2行表示
+        "ステータス": "出席" if att.get("entrance_time") else "未出席",
+    }
+    table.append(row)
+df = pd.DataFrame(table)
 
-    def header_color(s):
-        color_row = []
-        for i, col in enumerate(s.index):
-            if i < 2:
-                color_row.append("background-color: #e8e8e8")
-            else:
-                color_row.append(f"background-color: {colors[i-2]}")
-        return color_row
+from st_aggrid import AgGrid, GridOptionsBuilder
 
-    styled = df_all.style.apply(header_color, axis=1)
+gb = GridOptionsBuilder.from_dataframe(df)
+gb.configure_column("入退室", width=90, cellStyle={"whiteSpace": "pre-line"})
+gb.configure_selection(selection_mode="single", use_checkbox=True)
+grid_options = gb.build()
 
-    st.dataframe(
-        styled,
-        use_container_width=True,
-        hide_index=True
-    )
+AgGrid(
+    df,
+    gridOptions=grid_options,
+    fit_columns_on_grid_load=True,
+    height=400,
+)
+
 
 elif page == "月別報告書一覧":
     st.title("月別・生徒別 報告書一覧")
