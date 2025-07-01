@@ -416,9 +416,13 @@ elif page == "月別報告書一覧":
     # データ読込
     df = pd.read_csv(save_file)
 
-    # 月選択
-    unique_years = sorted(df["年"].unique())
-    unique_months = sorted(df["月"].unique())
+    # 年月の型を数値化しておく
+    df["年"] = pd.to_numeric(df["年"], errors="coerce").astype("Int64")
+    df["月"] = pd.to_numeric(df["月"], errors="coerce").astype("Int64")
+
+    # 年月の選択肢
+    unique_years = sorted(df["年"].dropna().unique())
+    unique_months = sorted(df["月"].dropna().unique())
     col1, col2 = st.columns(2)
     with col1:
         sel_year = st.selectbox("年", unique_years, index=len(unique_years)-1)
