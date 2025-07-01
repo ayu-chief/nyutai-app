@@ -237,7 +237,7 @@ if page == "本日の出席一覧":
             st.markdown(f"## {selected_name}さん　今月の入退室状況（{year}年{month}月）")
             st.write(cal_df)
             st.markdown("---")
-            st.markdown("## 日常の様子・行動報告・特記事項")
+            st.markdown("## 学習・生活・行動の報告")
             import os
             import pandas as pd
             if os.path.exists("reports.csv"):
@@ -287,7 +287,7 @@ if page == "本日の出席一覧":
         form_key = f"report_form_{selected_name}_{year}_{month}"
         with st.form(form_key):
             report = st.text_area(
-                "日常の様子・行動報告・特記事項 など",
+                "学習・生活・行動の報告",
                 height=120,
                 value=initial_text,
                 key=f"report_textarea_{selected_name}_{year}_{month}"
