@@ -4,3 +4,5 @@ numpy
 requests
 streamlit-aggrid
 jpholiday
+gspread
+google-auth
