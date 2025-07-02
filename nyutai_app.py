@@ -25,6 +25,12 @@ SPREADSHEET_KEY = "14xpU7k_Kh_s-ciOWeeaHcoi8NYDfYMpn1Lri3lSKOLc"
 sh = gc.open_by_key(SPREADSHEET_KEY)
 worksheet = sh.sheet1  # 一番左のシート
 
+# ====== 日付が変わったら自動リロード ======
+today_str = date.today().isoformat()
+if "last_run_date" not in st.session_state or st.session_state["last_run_date"] != today_str:
+    st.session_state["last_run_date"] = today_str
+    st.rerun()
+
 # ====== パスワード認証（当日中有効） ======
 PASSWORD = "kawasaki"   # ここを書き換えて運用してください
 
