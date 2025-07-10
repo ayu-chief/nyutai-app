@@ -26,8 +26,18 @@ sh = gc.open_by_key(SPREADSHEET_KEY)
 worksheet = sh.sheet1  # 一番左のシート
 
 # ====== 日付が変わったら自動リロード ======
+from datetime import date
+import streamlit as st
+
 today_str = date.today().isoformat()
-if "last_run_date" not in st.session_state or st.session_state["last_run_date"] != today_str:
+
+# 先にセッション状態を初期化
+if "last_run_date" not in st.session_state:
+    st.session_state["last_run_date"] = today_str
+
+# 日付が変わった場合はセッションをリセット＋再実行
+if st.session_state["last_run_date"] != today_str:
+    st.session_state.clear()   # これで全セッション変数をリセット
     st.session_state["last_run_date"] = today_str
     st.rerun()
 
