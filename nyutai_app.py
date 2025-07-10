@@ -11,14 +11,14 @@ import re
 import gspread
 from google.oauth2.service_account import Credentials
 
-SERVICE_ACCOUNT_FILE = "service_account.json"  # ← ダウンロードしたJSON名
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
 ]
 
-creds = Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+# ↓ここをSecretsから認証する形に修正！
+service_account_info = st.secrets["gcp_service_account"]  # secrets名と合わせてください
+creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
 gc = gspread.authorize(creds)
 
 SPREADSHEET_KEY = "14xpU7k_Kh_s-ciOWeeaHcoi8NYDfYMpn1Lri3lSKOLc"
