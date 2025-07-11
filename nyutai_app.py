@@ -257,7 +257,7 @@ if page == "本日の出席一覧":
 
         styled = cal_df.style.applymap(color_cell)
 
-        # ▼ ここでカレンダー表示
+        # ▼ カレンダー表示
         st.dataframe(
             styled,
             use_container_width=True,
@@ -276,7 +276,6 @@ if page == "本日の出席一覧":
             manual_out = st.time_input("退室時刻", value=None, key="manual_out")
             submitted = st.form_submit_button("この内容で修正する")
             if submitted:
-                # CSVで手入力記録を保存
                 import os
                 manual_csv = "manual_attendance.csv"
                 new_row = {
@@ -298,113 +297,6 @@ if page == "本日の出席一覧":
                     df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
                 st.success(f"{edit_day} の記録を修正しました！")
 
-        # ★ここに今後「APIデータ」と「manual_attendance.csv」の内容を
-        #   マージしてカレンダー反映する処理を追加していく形です
-
-        print_mode = st.button("この生徒のA4報告書を表示（印刷用）")
-
-        if print_mode:
-            # --- 印刷用ページのみ表示 ---
-            st.markdown(
-                "<style>@media print { .element-container { box-shadow: none !important; } }</style>",
-                unsafe_allow_html=True
-            )
-            st.markdown(f"## {selected_name}さん　今月の入退室状況（{year}年{month}月）")
-            st.write(cal_df)
-            st.markdown("---")
-            st.markdown("## 学習・生活・行動の報告")
-            import os
-            import pandas as pd
-            if os.path.exists("reports.csv"):
-                df = pd.read_csv("reports.csv")
-                mask = (df["生徒名"] == selected_name) & (df["年"] == year) & (df["月"] == month)
-                records = df[mask]
-                if len(records) > 0:
-                    st.write(records.iloc[0]["内容"])
-                else:
-                    st.write("(まだ報告がありません)")
-            else:
-                st.write("(まだ報告がありません)")
-            st.markdown("---")
-            st.caption("右上またはCtrl+PでA4印刷できます")
-            st.stop()   # ← 印刷用だけ表示して終了
-
-        # ▼ 通常画面（印刷ボタンを押していない場合）
-        st.dataframe(
-            styled,
-            use_container_width=True,
-            hide_index=True
-        )
-
-        import os
-        import pandas as pd
-
-        save_file = "reports.csv"
-
-        # --- すでに内容があればそれをフォーム初期値に ---
-        initial_text = ""
-        already_saved = False
-        record_index = None
-
-        if os.path.exists(save_file):
-            df = pd.read_csv(save_file)
-            mask = (df["生徒名"] == selected_name) & (df["年"] == year) & (df["月"] == month)
-            records = df[mask]
-            if len(records) > 0:
-                initial_text = records.iloc[0]["内容"]
-                already_saved = True
-                record_index = records.index[0]  # データフレーム内のインデックス
-
-        # --- ボタン名の動的切り替え ---
-        button_label = "入力内容を変更する" if already_saved else "この内容を保存"
-
-        # --- フォーム ---
-        form_key = f"report_form_{selected_name}_{year}_{month}"
-        with st.form(form_key):
-            report = st.text_area(
-                "学習・生活・行動の報告",
-                height=120,
-                value=initial_text,
-                key=f"report_textarea_{selected_name}_{year}_{month}"
-            )
-            submitted = st.form_submit_button(button_label)
-            if submitted:
-                if not report.strip():
-                    st.warning("内容を入力してください。")
-                else:
-                    new_row = {
-                        "生徒名": selected_name,
-                        "年": year,
-                        "月": month,
-                        "内容": report,
-                        "記入日時": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    if already_saved:
-                        # 上書き更新
-                        df.loc[record_index, "内容"] = report
-                        df.loc[record_index, "記入日時"] = new_row["記入日時"]
-                        df.to_csv(save_file, index=False, encoding="utf-8-sig")
-                        st.success("内容を更新しました！")
-                    else:
-                        # 新規追加
-                        if os.path.exists(save_file):
-                            df = pd.read_csv(save_file)
-                            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                        else:
-                            df = pd.DataFrame([new_row])
-                        df.to_csv(save_file, index=False, encoding="utf-8-sig")
-                        st.success("報告内容を保存しました！")
-                        
-                        # ↓↓↓ ここでスプレッドシートにも追記 ↓↓↓
-                        worksheet.append_row([
-                            str(month),  # 例：'7'（今月）
-                            selected_name,
-                            '',  # カレンダー（ここは後で調整・もしくは空白）
-                            '',  # 入退室記録（ここも後で）
-                            '',  # 出席日数（同上）
-                            report  # 学習・生活・行動の報告
-                        ])
-                        st.success("報告内容を保存しました！")
     else:
         st.info("出席一覧から生徒名を選択してください。")
 
