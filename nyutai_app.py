@@ -258,7 +258,49 @@ if page == "本日の出席一覧":
         styled = cal_df.style.applymap(color_cell)
 
         # ▼ ここでカレンダー表示
-        # ▼ カレンダー・styled の表示はここまでとする
+        st.dataframe(
+            styled,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        # ▼ カレンダー下に「打刻手入力フォーム」を追加
+        st.markdown("---")
+        st.markdown("#### この生徒の打刻漏れ修正")
+        with st.form("manual_attendance_edit"):
+            edit_day = st.selectbox(
+                "修正する日付",
+                [f"{year}-{month:02d}-{d:02d}" for d in range(1, days_in_month+1)]
+            )
+            manual_in = st.time_input("入室時刻", value=None, key="manual_in")
+            manual_out = st.time_input("退室時刻", value=None, key="manual_out")
+            submitted = st.form_submit_button("この内容で修正する")
+            if submitted:
+                # CSVで手入力記録を保存
+                import os
+                manual_csv = "manual_attendance.csv"
+                new_row = {
+                    "生徒名": selected_name,
+                    "日付": edit_day,
+                    "入室": manual_in.strftime("%H:%M") if manual_in else "-",
+                    "退室": manual_out.strftime("%H:%M") if manual_out else "-"
+                }
+                if os.path.exists(manual_csv):
+                    df = pd.read_csv(manual_csv)
+                    mask = (df["生徒名"] == selected_name) & (df["日付"] == edit_day)
+                    if mask.any():
+                        df.loc[mask, ["入室", "退室"]] = [new_row["入室"], new_row["退室"]]
+                    else:
+                        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                    df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
+                else:
+                    df = pd.DataFrame([new_row])
+                    df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
+                st.success(f"{edit_day} の記録を修正しました！")
+
+        # ★ここに今後「APIデータ」と「manual_attendance.csv」の内容を
+        #   マージしてカレンダー反映する処理を追加していく形です
+
         print_mode = st.button("この生徒のA4報告書を表示（印刷用）")
 
         if print_mode:
