@@ -79,7 +79,7 @@ GRADE_NAMES = {
     60: "社会人", 99: "その他",
     71: "年少組", 72: "年中組", 73: "年長組"
 }
-API_TOKEN = "skyWP-sRZ97HJKPMV9Cs"
+API_TOKEN = "41eL_54-bynysLzAsmad"   # ここを各校舎のトークンに変更するだけで名簿変更可能
 API_BASE = "https://site1.nyutai.com/api/chief/v1"
 headers = {"Api-Token": API_TOKEN}
 
