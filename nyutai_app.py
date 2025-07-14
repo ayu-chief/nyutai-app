@@ -204,7 +204,7 @@ if page == "本日の出席一覧":
                 day2times[day] = label
                 present_days.add(day)
 
-        # ここでmanual_attendance.csvをマージ
+        # manual_attendance.csvをマージ
         import os
         manual_csv = "manual_attendance.csv"
         if os.path.exists(manual_csv):
@@ -281,13 +281,14 @@ if page == "本日の出席一覧":
         # ▼ カレンダー下に「打刻手入力フォーム」を追加
         st.markdown("---")
         st.markdown("#### この生徒の打刻漏れ修正")
-        with st.form("manual_attendance_edit"):
+        with st.form(f"manual_attendance_edit_{selected_name}_{year}_{month}"):
             edit_day = st.selectbox(
                 "修正する日付",
-                [f"{year}-{month:02d}-{d:02d}" for d in range(1, days_in_month+1)]
+                [f"{year}-{month:02d}-{d:02d}" for d in range(1, days_in_month+1)],
+                key=f"edit_day_{selected_name}_{year}_{month}"
             )
-            manual_in = st.time_input("入室時刻", value=None, key="manual_in")
-            manual_out = st.time_input("退室時刻", value=None, key="manual_out")
+            manual_in = st.time_input("入室時刻", value=None, key=f"manual_in_{selected_name}_{year}_{month}")
+            manual_out = st.time_input("退室時刻", value=None, key=f"manual_out_{selected_name}_{year}_{month}")
             submitted = st.form_submit_button("この内容で修正する")
             if submitted:
                 manual_csv = "manual_attendance.csv"
@@ -297,6 +298,7 @@ if page == "本日の出席一覧":
                     "入室": manual_in.strftime("%H:%M") if manual_in else "-",
                     "退室": manual_out.strftime("%H:%M") if manual_out else "-"
                 }
+                import pandas as pd
                 if os.path.exists(manual_csv):
                     df = pd.read_csv(manual_csv)
                     mask = (df["生徒名"] == selected_name) & (df["日付"] == edit_day)
@@ -309,6 +311,7 @@ if page == "本日の出席一覧":
                     df = pd.DataFrame([new_row])
                     df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
                 st.success(f"{edit_day} の記録を修正しました！")
+                st.rerun()  # ★ これで即時カレンダー反映
 
     else:
         st.info("出席一覧から生徒名を選択してください。")
