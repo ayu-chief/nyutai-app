@@ -312,6 +312,24 @@ if page == "本日の出席一覧":
                     df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
                 st.success(f"{edit_day} の記録を修正しました！")
                 st.rerun()  # ★ これで即時カレンダー反映
+         # ▼ この日付の手入力を削除（API記録に戻す）
+        st.markdown("##### 手入力打刻をリセット（API記録に戻す）")
+        if st.button(f"選択日（{edit_day}）の手入力を削除してAPI記録に戻す", key=f"reset_{selected_name}_{edit_day}"):
+            manual_csv = "manual_attendance.csv"
+            import os
+            import pandas as pd
+            if os.path.exists(manual_csv):
+                df = pd.read_csv(manual_csv)
+                mask = (df["生徒名"] == selected_name) & (df["日付"] == edit_day)
+                if mask.any():
+                    df = df[~mask]
+                    df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
+                    st.success(f"{edit_day} の手入力を削除し、API記録に戻しました！")
+                else:
+                    st.info("この日の手入力修正はありません。")
+            else:
+                st.info("手入力記録ファイルが存在しません。")
+            st.rerun()
 
     else:
         st.info("出席一覧から生徒名を選択してください。")
