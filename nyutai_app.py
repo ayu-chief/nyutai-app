@@ -204,6 +204,20 @@ if page == "本日の出席一覧":
                 day2times[day] = label
                 present_days.add(day)
 
+        # ここでmanual_attendance.csvをマージ
+        import os
+        manual_csv = "manual_attendance.csv"
+        if os.path.exists(manual_csv):
+            df_manual = pd.read_csv(manual_csv)
+            manual_records = df_manual[
+                (df_manual["生徒名"] == selected_name) &
+                (df_manual["日付"].str.startswith(f"{year}-{month:02d}-"))
+            ]
+            for _, row in manual_records.iterrows():
+                d = int(row["日付"].split("-")[2])
+                day2times[d] = f"{d}\n{row['入室']}-{row['退室']}"
+                present_days.add(d)
+
         first_day_weekday = date(year, month, 1).weekday()
         start_padding = (first_day_weekday + 1) % 7
         calendar_cells = []
@@ -276,7 +290,6 @@ if page == "本日の出席一覧":
             manual_out = st.time_input("退室時刻", value=None, key="manual_out")
             submitted = st.form_submit_button("この内容で修正する")
             if submitted:
-                import os
                 manual_csv = "manual_attendance.csv"
                 new_row = {
                     "生徒名": selected_name,
