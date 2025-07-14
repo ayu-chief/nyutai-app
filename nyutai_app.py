@@ -314,7 +314,7 @@ if page == "本日の出席一覧":
                 st.rerun()  # ★ これで即時カレンダー反映
          # ▼ この日付の手入力を削除（API記録に戻す）
         st.markdown("##### 手入力打刻をリセット（API記録に戻す）")
-        if st.button(f"選択日（{edit_day}）の手入力を削除してAPI記録に戻す", key=f"reset_{selected_name}_{edit_day}"):
+        if st.button("カレンダーで日付を選択して入退くんの記録に戻す", key=f"reset_{selected_name}_{edit_day}"):
             manual_csv = "manual_attendance.csv"
             import os
             import pandas as pd
