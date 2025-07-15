@@ -409,12 +409,11 @@ elif page == "入退室一覧":
 
     selected_rows = response["selected_rows"]
     if selected_rows is not None and len(selected_rows) > 0:
-        st.write(selected_rows)  # これで中身が表示されるので必ず一度確認！
+        st.write("選択行:", selected_rows)
         selected_dict = selected_rows[0]
-        selected_name = selected_dict.get("生徒名")
-        if not selected_name:
-            st.error(f"選択行に「生徒名」列がありません: {selected_dict}")
-            st.stop()
+        # ここで本当のキー名（列名）を目で見て確認！
+        # selected_dict.keys() でもOK
+        st.write("列名リスト:", list(selected_dict.keys()))
 
     # ▼ 生徒が選択されたら、カレンダー＋フォームを下に表示
     if selected_rows is not None and len(selected_rows) > 0:
