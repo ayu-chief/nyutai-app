@@ -379,34 +379,33 @@ elif page == "入退室一覧":
 
     # ▼ 一覧テーブルの表示（生徒名選択可能）
     table = []
-for stu in students:
-    row = {"学年": GRADE_NAMES.get(stu.get("grade_id"), "不明"), "生徒名": stu["name"]}
-    for d in range(1, days_in_month + 1):
-        v = att_dict.get((stu["id"], d))
-        if v:
-            row[days[d-1]] = f"{to_hm(v[0])}\n{to_hm(v[1])}"
-        else:
-            row[days[d-1]] = "-"
-    table.append(row)
+    for stu in students:
+        row = {"学年": GRADE_NAMES.get(stu.get("grade_id"), "不明"), "生徒名": stu["name"]}
+        for d in range(1, days_in_month + 1):
+            v = att_dict.get((stu["id"], d))
+            if v:
+                row[days[d-1]] = f"{to_hm(v[0])}\n{to_hm(v[1])}"
+            else:
+                row[days[d-1]] = "-"
+        table.append(row)
 
-df_all = pd.DataFrame(table)
-df_all = df_all.reset_index(drop=True)  # ←index消す
+    df_all = pd.DataFrame(table)
+    df_all = df_all.reset_index(drop=True)
 
-from st_aggrid import AgGrid, GridOptionsBuilder
+    from st_aggrid import AgGrid, GridOptionsBuilder
 
-gb = GridOptionsBuilder.from_dataframe(df_all)
-gb.configure_selection(selection_mode="single", use_checkbox=True)
-grid_options = gb.build()
+    gb = GridOptionsBuilder.from_dataframe(df_all)
+    gb.configure_selection(selection_mode="single", use_checkbox=True)   # ← ここがポイント
+    grid_options = gb.build()
 
-response = AgGrid(
-    df_all,
-    gridOptions=grid_options,
-    allow_unsafe_jscode=True,   # ←これがあると確実（True推奨）
-    fit_columns_on_grid_load=False, # ←Falseで列幅が固定（左端が見切れない）
-    height=350,
-)
-
-selected_rows = response["selected_rows"]
+    response = AgGrid(
+        df_all,
+        gridOptions=grid_options,
+        allow_unsafe_jscode=True,         # ← これもTrueにする
+        fit_columns_on_grid_load=False,   # ← これもFalseに
+        height=350,
+    )
+    selected_rows = response["selected_rows"]
 
     # ▼ 生徒が選択されたら、カレンダー＋フォームを下に表示
     if selected_rows is not None and len(selected_rows) > 0:
