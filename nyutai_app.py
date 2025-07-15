@@ -409,11 +409,14 @@ elif page == "入退室一覧":
 
     selected_rows = response["selected_rows"]
     if selected_rows is not None and len(selected_rows) > 0:
-        st.write("選択行:", selected_rows)
         selected_dict = selected_rows[0]
-        # ここで本当のキー名（列名）を目で見て確認！
-        # selected_dict.keys() でもOK
-        st.write("列名リスト:", list(selected_dict.keys()))
+        st.write("選択された辞書:", selected_dict)
+        # キー名を表示
+        st.write("キー一覧:", list(selected_dict.keys()))
+        # 正しいキー名を指定
+        selected_name = selected_dict.get("生徒名")  # 必ずカギ括弧は一致させる！
+        st.write("選択された生徒名:", selected_name)
+        # 以降、selected_nameで検索・表示
 
     # ▼ 生徒が選択されたら、カレンダー＋フォームを下に表示
     if selected_rows is not None and len(selected_rows) > 0:
