@@ -394,10 +394,9 @@ elif page == "入退室一覧":
 
     from st_aggrid import AgGrid, GridOptionsBuilder
 
+    df_all = df_all.reset_index(drop=True)
     gb = GridOptionsBuilder.from_dataframe(df_all)
-    gb.configure_selection(selection_mode="single", use_checkbox=True, use_row_select=True)
-    # ↑ use_row_select=True を追加！（新しいst-aggridで必要な場合あり）
-
+    gb.configure_selection(selection_mode="single", use_checkbox=True)
     grid_options = gb.build()
 
     response = AgGrid(
@@ -407,6 +406,7 @@ elif page == "入退室一覧":
         fit_columns_on_grid_load=True,
         height=400,
     )
+
     selected_rows = response["selected_rows"]
 
     # ▼ 生徒が選択されたら、カレンダー＋フォームを下に表示
