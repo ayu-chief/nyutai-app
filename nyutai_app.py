@@ -368,8 +368,6 @@ elif page == "入退室一覧":
     date_from = f"{year}-{month:02d}-01"
     date_to = f"{year}-{month:02d}-{days_in_month:02d}"
     attendance = get_attendance(date_from, date_to)
-
-    # (user_id, 日) の dict
     att_dict = {}
     for rec in attendance:
         uid = rec["user_id"]
@@ -379,57 +377,184 @@ elif page == "入退室一覧":
             d = datetime.fromisoformat(dt_in).day
             att_dict[(uid, d)] = (dt_in, dt_out)
 
-    # ▼ 生徒ごと×日で表を作る
+    # ▼ 一覧テーブルの表示（生徒名選択可能）
     table = []
     for stu in students:
         row = {"学年": GRADE_NAMES.get(stu.get("grade_id"), "不明"), "生徒名": stu["name"]}
         for d in range(1, days_in_month + 1):
             v = att_dict.get((stu["id"], d))
             if v:
-                # 2行表示（AgGrid用に<br>に置換）
                 row[days[d-1]] = f"{to_hm(v[0])}\n{to_hm(v[1])}"
             else:
                 row[days[d-1]] = "-"
         table.append(row)
     df_all = pd.DataFrame(table)
 
-    # CSVダウンロード（改行は \n に戻してエクスポート）
-    df_csv = df_all.copy()
-    for col in df_csv.columns:
-        if col not in ("学年", "生徒名"):
-            df_csv[col] = df_csv[col].astype(str).str.replace("<br>", "\n")
-    csv = df_csv.to_csv(index=False).encode('utf-8-sig')
-    st.download_button(
-        label="この一覧をCSVでダウンロード",
-        data=csv,
-        file_name=f"{year}年{month}月_入退室一覧.csv",
-        mime='text/csv'
-    )
-
-    # --- AgGridでセル2行表示 ---
-    from st_aggrid import AgGrid, GridOptionsBuilder
-
     gb = GridOptionsBuilder.from_dataframe(df_all)
-    gb.configure_column("学年", width=80)
-    gb.configure_column("生徒名", width=120)
-    for col in df_all.columns:
-        if col not in ("学年", "生徒名"):
-            gb.configure_column(
-                col,
-                width=80,
-                cellRenderer='''(params) => `<div style="white-space:pre-line;line-height:1.4em">${params.value || ""}</div>`''',
-                autoHeight=True  # ←これも追加すると、2行目があっても行の高さが自動調整される
-            )
+    gb.configure_selection(selection_mode="single", use_checkbox=True)
     grid_options = gb.build()
-
-    AgGrid(
+    response = AgGrid(
         df_all,
         gridOptions=grid_options,
-        allow_unsafe_jscode=True,  # ←これを絶対Trueにする
-        fit_columns_on_grid_load=False,  # ←ここもFalseにするのがコツ！
-        height=500,
+        fit_columns_on_grid_load=True,
+        height=350,
     )
+    selected_rows = response["selected_rows"]
 
+    # ▼ 生徒が選択されたら、カレンダー＋フォームを下に表示
+    if selected_rows is not None and len(selected_rows) > 0:
+        selected_name = selected_rows[0]["生徒名"]
+        selected_student = next(stu for stu in students if stu["name"] == selected_name)
+        selected_id = selected_student["id"]
+
+        # ▼ カレンダー用データ
+        date_from = f"{year}-{month:02d}-01"
+        date_to = f"{year}-{month:02d}-{days_in_month:02d}"
+        attendance_month = get_attendance(date_from, date_to)
+        records = [rec for rec in attendance_month if rec["user_id"] == selected_id]
+
+        day2times = {}
+        present_days = set()
+        for rec in records:
+            dt_in = rec.get("entrance_time")
+            dt_out = rec.get("exit_time")
+            day = None
+            if dt_in:
+                day = datetime.fromisoformat(dt_in).day
+            if day:
+                label = f"{day}\n{to_hm(dt_in) if dt_in else '-'}-{to_hm(dt_out) if dt_out else '-'}"
+                day2times[day] = label
+                present_days.add(day)
+
+        # manual_attendance.csvをマージ
+        import os
+        manual_csv = "manual_attendance.csv"
+        if os.path.exists(manual_csv):
+            df_manual = pd.read_csv(manual_csv)
+            manual_records = df_manual[
+                (df_manual["生徒名"] == selected_name) &
+                (df_manual["日付"].str.startswith(f"{year}-{month:02d}-"))
+            ]
+            for _, row in manual_records.iterrows():
+                d = int(row["日付"].split("-")[2])
+                day2times[d] = f"{d}\n{row['入室']}-{row['退室']}"
+                present_days.add(d)
+
+        first_day_weekday = date(year, month, 1).weekday()
+        start_padding = (first_day_weekday + 1) % 7
+        calendar_cells = []
+        for d in range(1, days_in_month+1):
+            if d in day2times:
+                s = day2times[d]
+            else:
+                s = f"{d}\n-"
+            calendar_cells.append(s)
+        calendar_days = [""] * start_padding + calendar_cells
+        while len(calendar_days) % 7 != 0:
+            calendar_days.append("")
+        calendar_matrix = np.array(calendar_days).reshape(-1, 7)
+
+        cal_df = pd.DataFrame(calendar_matrix, columns=["日","月","火","水","木","金","土"])
+
+        def is_empty_row(row):
+            for cell in row:
+                s = str(cell).strip()
+                if s in ["", "-"]:
+                    continue
+                if re.match(r"^\d+\n-$", s):
+                    continue
+                return False
+            return True
+
+        cal_df = cal_df[~cal_df.apply(is_empty_row, axis=1)]
+
+        st.subheader(f"{selected_name} さんの今月の入退室状況")
+        def color_cell(val):
+            if not val or "\n" not in str(val):
+                return "background-color: #eeeeee; font-size: 1.2em; line-height: 1.6;"
+            day_str = str(val).split("\n")[0]
+            try:
+                day = int(day_str)
+                thisdate = date(year, month, day)
+            except:
+                return "background-color: #eeeeee; font-size: 1.2em; line-height: 1.6;"
+            if jpholiday.is_holiday(thisdate):
+                base = "background-color: #ffc1c1;"
+            elif thisdate.weekday() == 6:
+                base = "background-color: #ffb3b3;"
+            elif thisdate.weekday() == 5:
+                base = "background-color: #bbd6ff;"
+            elif day in present_days:
+                base = "background-color: #b7eeb7;"
+            else:
+                base = "background-color: #eeeeee;"
+            return f"{base} font-size: 1.2em; line-height: 1.5;"
+
+        styled = cal_df.style.applymap(color_cell)
+        st.dataframe(
+            styled,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        # ▼ 打刻漏れ修正フォーム＋API記録に戻す機能
+        st.markdown("---")
+        st.markdown("#### この生徒の打刻漏れ修正")
+        with st.form(f"manual_attendance_edit_{selected_name}_{year}_{month}"):
+            edit_day = st.selectbox(
+                "修正する日付",
+                [f"{year}-{month:02d}-{d:02d}" for d in range(1, days_in_month+1)],
+                key=f"edit_day_{selected_name}_{year}_{month}"
+            )
+            manual_in = st.time_input("入室時刻", value=None, key=f"manual_in_{selected_name}_{year}_{month}")
+            manual_out = st.time_input("退室時刻", value=None, key=f"manual_out_{selected_name}_{year}_{month}")
+            submitted = st.form_submit_button("この内容で修正する")
+            if submitted:
+                manual_csv = "manual_attendance.csv"
+                new_row = {
+                    "生徒名": selected_name,
+                    "日付": edit_day,
+                    "入室": manual_in.strftime("%H:%M") if manual_in else "-",
+                    "退室": manual_out.strftime("%H:%M") if manual_out else "-"
+                }
+                import pandas as pd
+                if os.path.exists(manual_csv):
+                    df = pd.read_csv(manual_csv)
+                    mask = (df["生徒名"] == selected_name) & (df["日付"] == edit_day)
+                    if mask.any():
+                        df.loc[mask, ["入室", "退室"]] = [new_row["入室"], new_row["退室"]]
+                    else:
+                        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                    df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
+                else:
+                    df = pd.DataFrame([new_row])
+                    df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
+                st.success(f"{edit_day} の記録を修正しました！")
+                st.rerun()
+
+        # ▼ この日付の手入力を削除（API記録に戻す）
+        st.markdown("##### 手入力打刻をリセット（API記録に戻す）")
+        if st.button("カレンダーで日付を選択して入退くんの記録に戻す", key=f"reset_{selected_name}_{edit_day}"):
+            manual_csv = "manual_attendance.csv"
+            import os
+            import pandas as pd
+            if os.path.exists(manual_csv):
+                df = pd.read_csv(manual_csv)
+                mask = (df["生徒名"] == selected_name) & (df["日付"] == edit_day)
+                if mask.any():
+                    df = df[~mask]
+                    df.to_csv(manual_csv, index=False, encoding="utf-8-sig")
+                    st.success(f"{edit_day} の手入力を削除し、API記録に戻しました！")
+                else:
+                    st.info("この日の手入力修正はありません。")
+            else:
+                st.info("手入力記録ファイルが存在しません。")
+            st.rerun()
+
+    else:
+        st.info("一覧から生徒名を選択してください。")
+
+# ===== 3. 月別報告書一覧 =====
 elif page == "月別報告書一覧":
     st.title("月別・生徒別 報告書一覧")
     import os
