@@ -395,15 +395,17 @@ elif page == "入退室一覧":
     from st_aggrid import AgGrid, GridOptionsBuilder
 
     gb = GridOptionsBuilder.from_dataframe(df_all)
-    gb.configure_selection(selection_mode="single", use_checkbox=True)   # ← ここがポイント
+    gb.configure_selection(selection_mode="single", use_checkbox=True, use_row_select=True)
+    # ↑ use_row_select=True を追加！（新しいst-aggridで必要な場合あり）
+
     grid_options = gb.build()
 
     response = AgGrid(
         df_all,
         gridOptions=grid_options,
-        allow_unsafe_jscode=True,         # ← これもTrueにする
-        fit_columns_on_grid_load=False,   # ← これもFalseに
-        height=350,
+        allow_unsafe_jscode=True,
+        fit_columns_on_grid_load=True,
+        height=400,
     )
     selected_rows = response["selected_rows"]
 
