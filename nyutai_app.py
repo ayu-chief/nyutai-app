@@ -409,14 +409,17 @@ elif page == "入退室一覧":
 
     selected_rows = response["selected_rows"]
     if selected_rows is not None and len(selected_rows) > 0:
-        selected_dict = selected_rows[0]
-        st.write("選択された辞書:", selected_dict)
-        # キー名を表示
-        st.write("キー一覧:", list(selected_dict.keys()))
-        # 正しいキー名を指定
-        selected_name = selected_dict.get("生徒名")  # 必ずカギ括弧は一致させる！
-        st.write("選択された生徒名:", selected_name)
-        # 以降、selected_nameで検索・表示
+        selected = selected_rows[0]
+        import collections.abc
+        # DataFrame行（Series型）ならdictに変換
+        if not isinstance(selected, dict):
+            selected = selected.to_dict()
+        # デバッグ用に中身確認
+        st.write("選択行の中身:", selected)
+        st.write("キー一覧:", list(selected.keys()))
+        # 「生徒名」で取得（キー名違いにも注意！）
+        selected_name = selected.get("生徒名")
+        st.write("選択生徒名:", selected_name)
 
     # ▼ 生徒が選択されたら、カレンダー＋フォームを下に表示
     if selected_rows is not None and len(selected_rows) > 0:
