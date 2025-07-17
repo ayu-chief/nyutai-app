@@ -408,6 +408,7 @@ elif page == "入退室一覧":
     )
 
     selected_rows = response["selected_rows"]
+    st.write("DEBUG 選択行", selected_rows, type(selected_rows))
     if selected_rows is not None and len(selected_rows) > 0:
         selected = selected_rows[0]
         # DataFrame行（Series型）の場合はdictに変換
