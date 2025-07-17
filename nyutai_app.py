@@ -410,15 +410,19 @@ elif page == "入退室一覧":
     selected_rows = response["selected_rows"]
     st.write("DEBUG 選択行", selected_rows, type(selected_rows))
     if selected_rows is not None and len(selected_rows) > 0:
-        selected = selected_rows[0]
-        # DataFrame行（Series型）の場合はdictに変換
-        if not isinstance(selected, dict):
-            selected = dict(selected)
-        # デバッグ表示
+        selected0 = selected_rows[0]
+        import pandas as pd
+        # DataFrameの場合は1行目をSeries→dict化
+        if isinstance(selected0, pd.DataFrame):
+            selected = selected0.iloc[0].to_dict()
+        # Seriesの場合
+        elif hasattr(selected0, "to_dict"):
+            selected = selected0.to_dict()
+        # それ以外(dict等)
+        else:
+            selected = dict(selected0)
         st.write("選択行の中身:", selected)
         st.write("キー一覧:", list(selected.keys()))
-        # まず正しいキー名を確認
-        # 例えば '生徒名' や 'name' など、正しいキー名を使う
         selected_name = selected.get("生徒名") or selected.get("name")
         st.write("選択生徒名:", selected_name)
 
