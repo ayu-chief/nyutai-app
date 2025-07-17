@@ -410,15 +410,15 @@ elif page == "入退室一覧":
     selected_rows = response["selected_rows"]
     if selected_rows is not None and len(selected_rows) > 0:
         selected = selected_rows[0]
-        import collections.abc
-        # DataFrame行（Series型）ならdictに変換
+        # DataFrame行（Series型）の場合はdictに変換
         if not isinstance(selected, dict):
-            selected = selected.to_dict()
-        # デバッグ用に中身確認
+            selected = dict(selected)
+        # デバッグ表示
         st.write("選択行の中身:", selected)
         st.write("キー一覧:", list(selected.keys()))
-        # 「生徒名」で取得（キー名違いにも注意！）
-        selected_name = selected.get("生徒名")
+        # まず正しいキー名を確認
+        # 例えば '生徒名' や 'name' など、正しいキー名を使う
+        selected_name = selected.get("生徒名") or selected.get("name")
         st.write("選択生徒名:", selected_name)
 
     # ▼ 生徒が選択されたら、カレンダー＋フォームを下に表示
